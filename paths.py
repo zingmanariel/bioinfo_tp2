@@ -1,134 +1,64 @@
-"""Busqueda del camino sobre el dot-plot.
+"""Path search over the dot-plot: a greedy walk (exercises 3.1 d/e, 3.2 c/e).
 
-Ejercicios 3.1 d) y e) para el dot-plot de 0s y 1s, y 3.2 e) para el dot-plot
-con valores reales.
+A path is a list of coordinates [(i, j), ...] starting at the top-left corner
+and advancing to the bottom-right corner. Between two consecutive coordinates
+there are only three possible steps:
 
-Un camino es una lista de coordenadas [(i, j), ...] que arranca arriba a la
-izquierda y avanza hacia abajo a la derecha. Entre dos coordenadas consecutivas
-solo hay tres pasos posibles:
+    D (diagonal)   i+1, j+1   aligns s1[i] with s2[j] (match or mismatch)
+    V (vertical)   i+1, j     gap in s2
+    H (horizontal) i,   j+1   gap in s1
 
-    D (diagonal)   i+1, j+1   alinea s1[i] con s2[j] (match o mismatch)
-    V (vertical)   i+1, j     gap en s2
-    H (horizontal) i,   j+1   gap en s1
-
-Como se decide cada paso (el consejo de "dividir y conquistar" del TP): el
-mejor camino que llega a la casilla (i, j) es el mejor de los tres caminos que
-llegan a sus vecinas (i-1, j-1), (i-1, j) e (i, j-1), mas lo que suma el paso
-final. Es decir, el problema grande se arma con la solucion de los problemas
-chicos, y alcanza con recorrer la matriz una sola vez guardando, en cada
-casilla, el mejor puntaje y de donde vino. Al final se vuelve hacia atras
-desde la mejor casilla del borde derecho o inferior: eso es el camino.
+How each step is decided (the TP's "divide and conquer" hint, read as a local
+decision taken one step at a time): standing at (i, j), look at the value of
+the three neighboring cells -diagonal, vertical, horizontal- and move to
+whichever is highest right now. That's it: there is no table of accumulated
+scores for the whole matrix, and a decision already made is never revisited.
+This is the opposite of dynamic programming (see dyn_align.py, which does
+keep the best accumulated score at every cell): a greedy path can make a bad
+call early on and stay off track for the rest of the sequence, something a DP
+never does because it considers every path before committing to one.
 """
 
 import numpy as np
 
 
-# ---------------------------------------------------------------------------
-# 3.1d) Recorrer el dot-plot de 0s y 1s
-# ---------------------------------------------------------------------------
+def find_path(dotplot, start=(0, 0)):
+    """Greedy path over the dot-plot, as a list of (i, j) coordinates.
 
-def find_path(dotplot, start=(0, 0), gap_penalty=-1.0):
-    """Mejor camino sobre el dot-plot, como lista de coordenadas (i, j).
-
-    Cada paso D suma el valor de la casilla (1 si es match, 0 si no) y cada
-    paso V/H cuesta gap_penalty, asi que el camino prefiere la diagonal
-    mientras haya matches y solo mete un gap cuando le conviene.
+    At each step it compares the value of the three neighboring cells
+    (diagonal, vertical, horizontal) and moves to whichever is highest right
+    now; ties go to the diagonal, then to vertical. Works the same on a 0/1
+    dot-plot and on one with real values (3.2d): with real values the
+    comparison is no longer "is there a match", it's "how good is it", so a
+    conservative substitution can outweigh a weak match.
     """
-    return _best_path(dotplot, start, gap_penalty)
+    array = np.asarray(dotplot, dtype=float)
+    rows, cols = array.shape
+    i, j = start
+    path = [(i, j)]
 
+    while i < rows - 1 or j < cols - 1:
+        options = []
+        if i + 1 < rows and j + 1 < cols:
+            options.append((array[i + 1][j + 1], (i + 1, j + 1)))   # D
+        if i + 1 < rows:
+            options.append((array[i + 1][j], (i + 1, j)))           # V
+        if j + 1 < cols:
+            options.append((array[i][j + 1], (i, j + 1)))           # H
+        _, (i, j) = max(options, key=lambda option: option[0])
+        path.append((i, j))
 
-# ---------------------------------------------------------------------------
-# 3.2e) El mismo recorrido, pero sobre un dot-plot con valores reales
-# ---------------------------------------------------------------------------
-
-def find_path_scored(scored_dotplot, start=(0, 0), gap_penalty=-4.0):
-    """Camino sobre el dot-plot de valores reales de 3.2d).
-
-    Es el mismo algoritmo que find_path(): lo unico que cambia es que ahora
-    cada casilla vale su puntaje de sustitucion en vez de 0 o 1, y que el gap
-    cuesta lo que cuesta en esa escala (-4 es el orden de un gap en BLOSUM62).
-    """
-    return _best_path(scored_dotplot, start, gap_penalty)
-
-
-def _best_path(dotplot, start, gap_penalty):
-    """Programacion dinamica sobre la matriz + reconstruccion del camino."""
-    i0, j0 = start
-    values = np.asarray(dotplot, dtype=float)[i0:, j0:].tolist()
-    if not values or not values[0]:
-        return []
-    rows, cols = len(values), len(values[0])
-
-    # score[i][j]: puntaje del mejor camino que va de (0, 0) a (i, j)
-    # move[i][j]:  con que paso se llego a (i, j) ('S' = arranque)
-    score = [[0.0] * cols for _ in range(rows)]
-    move = [[''] * cols for _ in range(rows)]
-    score[0][0] = values[0][0]
-    move[0][0] = 'S'
-
-    for i in range(rows):
-        for j in range(cols):
-            if i == 0 and j == 0:
-                continue
-            options = []
-            if i > 0 and j > 0:
-                options.append((score[i - 1][j - 1] + values[i][j], 'D'))
-            if i > 0:
-                options.append((score[i - 1][j] + gap_penalty, 'V'))
-            if j > 0:
-                options.append((score[i][j - 1] + gap_penalty, 'H'))
-            # max() se queda con el primero de los empatados, y D va primero:
-            # ante igualdad de puntaje conviene el paso diagonal.
-            score[i][j], move[i][j] = max(options, key=lambda option: option[0])
-
-    return _traceback(score, move, i0, j0)
-
-
-def _best_end(score):
-    """Mejor casilla del borde derecho o inferior: ahi termina el camino.
-
-    El TP pide llegar al limite derecho o inferior (idealmente a la esquina),
-    asi que el final no se fuerza en (rows-1, cols-1): se elige el borde que
-    mejor puntaje da.
-    """
-    rows, cols = len(score), len(score[0])
-    best = (rows - 1, cols - 1)
-    for i in range(rows):
-        if score[i][cols - 1] > score[best[0]][best[1]]:
-            best = (i, cols - 1)
-    for j in range(cols):
-        if score[rows - 1][j] > score[best[0]][best[1]]:
-            best = (rows - 1, j)
-    return best
-
-
-def _traceback(score, move, i0, j0):
-    """Rehace el camino hacia atras desde el final hasta el arranque."""
-    i, j = _best_end(score)
-    path = []
-    while True:
-        path.append((i + i0, j + j0))
-        step = move[i][j]
-        if step == 'S':
-            break
-        if step == 'D':
-            i, j = i - 1, j - 1
-        elif step == 'V':
-            i -= 1
-        else:
-            j -= 1
-    path.reverse()
     return path
 
 
 # ---------------------------------------------------------------------------
-# Utilidades sobre un camino ya calculado
+# Utilities over an already computed path
 # ---------------------------------------------------------------------------
 
 def path_steps(path):
-    """Traduce el camino a la cadena de pasos D/V/H, para inspeccionarlo.
+    """Translate the path into its D/V/H step string, to inspect it.
 
-    Es lo que consume alignment.align_from_path() para saber donde van los gaps.
+    This is what alignment.align_from_path() consumes to know where the gaps go.
     """
     steps = ''
     for (i0, j0), (i1, j1) in zip(path, path[1:]):
@@ -140,18 +70,18 @@ def path_steps(path):
         elif (di, dj) == (0, 1):
             steps += 'H'
         else:
-            raise ValueError(f'Paso invalido en el camino: {(i0, j0)} -> {(i1, j1)}')
+            raise ValueError(f'Invalid step in path: {(i0, j0)} -> {(i1, j1)}')
     return steps
 
 
 def step_counts(path):
-    """Cuantos pasos de cada tipo tiene el camino: {'D': n, 'V': n, 'H': n}."""
+    """How many steps of each type the path has: {'D': n, 'V': n, 'H': n}."""
     steps = path_steps(path)
     return {step: steps.count(step) for step in 'DVH'}
 
 
 def path_score(dotplot, path):
-    """Suma de los valores del dot-plot a lo largo del camino: una medida
-    rapida para comparar dos caminos sobre la misma matriz."""
+    """Sum of the dot-plot values along the path: a quick way to compare two
+    paths over the same matrix."""
     array = np.asarray(dotplot, dtype=float)
     return float(sum(array[i][j] for i, j in path))

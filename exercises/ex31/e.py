@@ -16,15 +16,15 @@ def run():
     dotplot = build_dotplot(s1, s2)
     path = find_path(dotplot)
 
-    print(f'camino de {len(path)} coordenadas')
-    print(f'primeras {COORDS_SHOWN}: {path[:COORDS_SHOWN]}')
-    print(f'ultimas {COORDS_SHOWN}:  {path[-COORDS_SHOWN:]}')
+    print(f'path of {len(path)} coordinates')
+    print(f'first {COORDS_SHOWN}: {path[:COORDS_SHOWN]}')
+    print(f'last {COORDS_SHOWN}:  {path[-COORDS_SHOWN:]}')
 
     plot_dotplot_with_path(dotplot, path,
-                           title=f'Camino sobre el dot-plot crudo ({len(path)} pasos)')
+                           title=f'Path over the raw dot-plot ({len(path)} steps)')
 
     filtered = filter_dotplot(dotplot, WINDOW, THRESHOLD, diagonal=True)
     plot_dotplot_with_path(filtered, find_path(filtered),
-                           title=f'Camino sobre el dot-plot filtrado '
-                                 f'(w = {WINDOW}, umbral = {THRESHOLD})')
+                           title=f'Path over the filtered dot-plot '
+                                 f'(w = {WINDOW}, threshold = {THRESHOLD})')
     return path

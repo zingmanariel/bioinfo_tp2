@@ -15,7 +15,7 @@ from dotplot import build_dotplot
 from paths import find_path, path_steps
 from sequences import load_pair
 
-# El ejemplo del enunciado, para ver el formato en algo chico y verificable.
+# The example from the assignment, to check the format on something small and verifiable.
 EXAMPLE = ('ACGTTCAGTAG', 'ACCACTTG')
 
 
@@ -26,17 +26,17 @@ def align(s1, s2):
 
 
 def run():
-    print('--- ejemplo corto del enunciado ---')
+    print('--- short example from the assignment ---')
     s1, s2 = EXAMPLE
     path, (row1, row2) = align(s1, s2)
-    print(f'camino: {path_steps(path)}\n')
+    print(f'path: {path_steps(path)}\n')
     print_alignment(row1, row2)
 
-    print('\n--- las dos secuencias de data/ ---')
+    print('\n--- the two sequences from data/ ---')
     s1, s2 = load_pair()
     path, (row1, row2) = align(s1, s2)
     stats = print_alignment(row1, row2)
 
-    print('\n(la variante con la fila de matches en el medio se obtiene con '
+    print('\n(the variant with the match row in the middle is obtained with '
           'print_alignment(row1, row2, match_first=True))')
     return stats

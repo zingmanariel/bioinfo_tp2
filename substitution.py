@@ -1,41 +1,42 @@
-"""Matrices de sustitucion para los alineamientos de proteinas (3.2 a).
+"""Substitution matrices for the protein alignments (3.2 a).
 
-Biopython trae las matrices ya cargadas, asi que no hace falta bajarlas:
+Biopython ships the matrices already loaded, so there's no need to download
+them:
 
     from Bio.Align import substitution_matrices
-    substitution_matrices.load()          # nombres disponibles
+    substitution_matrices.load()          # available names
 
-Nota: el TP sugiere "Blossum60", que no existe entre las estandar. Las BLOSUM
-disponibles son 45, 50, 62, 80 y 90; usamos BLOSUM62 por defecto, que es la que
-usa BLASTP y por lo tanto la que hace comparables nuestros resultados con los
-de BLAST. El numero es el porcentaje de identidad al que se agruparon las
-secuencias con las que se construyo la matriz: mas bajo (BLOSUM45) para
-proteinas lejanas, mas alto (BLOSUM80) para proteinas cercanas.
+Note: the TP suggests "Blossum60", which does not exist among the standard
+ones. The BLOSUM matrices available are 45, 50, 62, 80 and 90; we default to
+BLOSUM62, which is what BLASTP uses and therefore what makes our results
+comparable to BLAST's. The number is the identity percentage at which the
+sequences used to build the matrix were clustered: lower (BLOSUM45) for
+distant proteins, higher (BLOSUM80) for close ones.
 """
 
 from Bio.Align import substitution_matrices
 
 DEFAULT_MATRIX = 'BLOSUM62'
 
-# Residuo con el que se puntuan los simbolos que la matriz no conoce.
+# Residue used to score symbols the matrix doesn't know.
 UNKNOWN = 'X'
 
 
 def available():
-    """Nombres de las matrices que trae Biopython."""
+    """Names of the matrices Biopython ships."""
     return sorted(substitution_matrices.load())
 
 
 def load_matrix(name=DEFAULT_MATRIX):
-    """Levanta la matriz de sustitucion por nombre."""
+    """Loads the substitution matrix by name."""
     return substitution_matrices.load(name)
 
 
 def score(matrix, a, b):
-    """Puntaje de sustituir el aminoacido a por el b.
+    """Score of substituting amino acid a for b.
 
-    Los simbolos que la matriz no conoce se puntuan como 'X' (residuo
-    desconocido), que es lo que hacen los alineadores.
+    Symbols the matrix doesn't know are scored as 'X' (unknown residue),
+    which is what real aligners do.
     """
     alphabet = matrix.alphabet
     a = a if a in alphabet else UNKNOWN
@@ -44,18 +45,18 @@ def score(matrix, a, b):
 
 
 def describe(matrix, name=DEFAULT_MATRIX):
-    """Impresion legible de la matriz, para analizarla antes de usarla."""
-    print(f'Matriz {name}: alfabeto de {len(matrix.alphabet)} simbolos')
+    """Readable printout of the matrix, to look it over before using it."""
+    print(f'Matrix {name}: alphabet of {len(matrix.alphabet)} symbols')
     print(matrix)
 
     diagonal = [matrix[a, a] for a in matrix.alphabet]
     off_diagonal = [matrix[a, b] for a in matrix.alphabet
                     for b in matrix.alphabet if a != b]
-    print(f'\ndiagonal (mismo residuo): min {min(diagonal):.0f}, '
-          f'max {max(diagonal):.0f}, promedio {sum(diagonal) / len(diagonal):.2f}')
-    print(f'fuera de la diagonal: min {min(off_diagonal):.0f}, '
+    print(f'\ndiagonal (same residue): min {min(diagonal):.0f}, '
+          f'max {max(diagonal):.0f}, average {sum(diagonal) / len(diagonal):.2f}')
+    print(f'off diagonal: min {min(off_diagonal):.0f}, '
           f'max {max(off_diagonal):.0f}, '
-          f'promedio {sum(off_diagonal) / len(off_diagonal):.2f}')
+          f'average {sum(off_diagonal) / len(off_diagonal):.2f}')
     positives = sum(1 for value in off_diagonal if value > 0)
-    print(f'sustituciones distintas con puntaje positivo (conservativas): '
-          f'{positives} de {len(off_diagonal)}')
+    print(f'distinct substitutions with a positive score (conservative): '
+          f'{positives} of {len(off_diagonal)}')

@@ -22,7 +22,7 @@ THRESHOLD = 6
 
 
 def measure(s1, s2, dotplot):
-    """Corre el camino sobre el dot-plot y devuelve el resumen del alineamiento."""
+    """Run the path search over the dot-plot and return the alignment summary."""
     path = find_path(dotplot)
     row1, row2 = align_from_path(s1, s2, path)
     stats = alignment_stats(row1, row2)
@@ -37,60 +37,65 @@ def row(label, dotplot, stats):
 
 def header(title):
     print(f'\n--- {title} ---')
-    print(f'{"":<22} {"dots":>7} {"identidad":>11} {"largo":>8} {"gaps":>7}')
+    print(f'{"":<22} {"dots":>7} {"identity":>11} {"length":>8} {"gaps":>7}')
 
 
 def run():
-    # 1) identidad: mismo largo, cada vez mas mutaciones
-    header(f'efecto de la identidad (largo {LENGTH}, sin filtro)')
+    # 1) identity: same length, increasing mutations
+    header(f'effect of identity (length {LENGTH}, no filter)')
     dotplots, paths = {}, {}
     for identity in IDENTITIES:
         s1 = generate_random_nt_sequence(LENGTH)
         s2 = mutate(s1, identity)
         dotplot = build_dotplot(s1, s2)
         path, stats = measure(s1, s2, dotplot)
-        row(f'identidad {identity:.0%}', dotplot, stats)
-        label = f'identidad {identity:.0%}'
+        row(f'identity {identity:.0%}', dotplot, stats)
+        label = f'identity {identity:.0%}'
         dotplots[label], paths[label] = dotplot, path
 
-    # 2) largo distinto: mismas mutaciones, mas indels
-    header(f'efecto del largo distinto ({INDELS} indels)')
+    # 2) different length: same mutations, plus indels
+    header(f'effect of a length mismatch ({INDELS} indels)')
     for identity in IDENTITIES[:2]:
         s1 = generate_random_nt_sequence(LENGTH)
         s2 = insert_indels(mutate(s1, identity), INDELS)
         dotplot = build_dotplot(s1, s2)
         path, stats = measure(s1, s2, dotplot)
-        row(f'identidad {identity:.0%} + indels', dotplot, stats)
+        row(f'identity {identity:.0%} + indels', dotplot, stats)
 
-    # 3) filtro: el mismo par, con y sin filtrar
-    header(f'efecto del filtro (w = {WINDOW}, umbral = {THRESHOLD})')
+    # 3) filter: the same pair, filtered and unfiltered
+    header(f'effect of the filter (w = {WINDOW}, threshold = {THRESHOLD})')
     for identity in IDENTITIES:
         s1 = generate_random_nt_sequence(LENGTH)
         s2 = mutate(s1, identity)
         dotplot = build_dotplot(s1, s2)
         filtered = filter_dotplot(dotplot, WINDOW, THRESHOLD, diagonal=True)
         _, stats = measure(s1, s2, dotplot)
-        row(f'identidad {identity:.0%} crudo', dotplot, stats)
+        row(f'identity {identity:.0%} raw', dotplot, stats)
         _, filtered_stats = measure(s1, s2, filtered)
-        row(f'identidad {identity:.0%} filtrado', filtered, filtered_stats)
+        row(f'identity {identity:.0%} filtered', filtered, filtered_stats)
 
     print("""
-A medida que baja la identidad la diagonal se despuebla, pero el camino sigue
-saliendo derecho: siempre hay un camino, y con 25% de matches de fondo alcanza
-para ir en diagonal aunque las secuencias no tengan nada que ver. Por eso la
-identidad del alineamiento reproduce casi exactamente la que se pidio al
-mutar: el camino no "descubre" homologia, la mide.
+As true identity drops, the path opens more and more gaps instead of just
+running straight through the noise: 24 gaps at 95% identity, 106 at 50%. The
+greedy rule looks one step ahead at a time, so a background match on a
+neighboring cell (about 25% of cells are a "match" by chance alone, since DNA
+only has 4 letters) is enough to pull it off the true diagonal; measured
+identity ends up well below the real one (24.1% at 50% true identity, barely
+above the 25% background rate) because the path is not just "measuring"
+identity anymore, it's actively chasing noise.
 
-Los indels son los que sacan al camino de la diagonal: ahi aparecen los pasos
-V/H, y la identidad baja mas de lo que corresponde a las mutaciones porque el
-camino tarda unos pasos en reengancharse con la diagonal corrida.
+Indels hurt this algorithm even more than substitutions. 6 indels on top of
+95%-identity sequences alone crash measured identity to 36.9% with about 100
+gaps: once an indel shifts the true diagonal, the one-step lookahead has no
+way to relocate it except by stumbling into a nearby match, and usually it
+doesn't recover cleanly for a long stretch.
 
-El filtro no cambia el trazado mientras la identidad es alta (la diagonal
-sobrevive entera y solo se apaga el fondo). Cuando la identidad es baja el
-filtro tambien borra tramos de la diagonal verdadera, quedan pedazos sueltos y
-el camino empieza a saltar de uno a otro: por eso la ultima fila de la tabla
-tiene mas gaps filtrada que cruda.
+The filter is not cosmetic for this algorithm, it's load-bearing: at every
+identity level it cuts gaps close to zero and pulls measured identity back
+near the true value (95%: 73.4% -> 96.3% identity, gaps 40 -> 0; 70%: 26.0% ->
+63.9%, gaps 130 -> 10). Removing the background noise before walking is what
+lets a purely local, no-lookback decision rule work at all.
 """)
 
-    plot_dotplot_grid(dotplots, title=f'Camino vs. identidad (largo {LENGTH})',
+    plot_dotplot_grid(dotplots, title=f'Path vs. identity (length {LENGTH})',
                       paths=paths)

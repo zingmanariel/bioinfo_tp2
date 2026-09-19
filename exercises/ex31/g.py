@@ -23,32 +23,35 @@ def run():
     stats = alignment_stats(row1, row2)
     counts = step_counts(path)
 
-    print('resultado de nuestro algoritmo:')
-    print(f'  largo del alineamiento: {stats["length"]}')
-    print(f'  identidad: {stats["identity"]:.1%} '
+    print('our path search result:')
+    print(f'  alignment length: {stats["length"]}')
+    print(f'  identity: {stats["identity"]:.1%} '
           f'({stats["matches"]}/{stats["length"]})')
-    print(f'  gaps: {stats["gaps"]} (pasos V={counts["V"]}, H={counts["H"]})')
+    print(f'  gaps: {stats["gaps"]} (steps V={counts["V"]}, H={counts["H"]})')
 
     paths = []
     for filename, sequence in zip(EXPORTS, (s1, s2)):
         paths.append(write_fasta(data_path(filename), sequence, filename.split('.')[0]))
-    print('\nsecuencias exportadas para pegar en BLAST:')
+    print('\nsequences exported to paste into BLAST:')
     for exported in paths:
         print(f'  {exported}')
 
     print("""
-Como comparar:
-  1. Entrar a https://blast.ncbi.nlm.nih.gov -> Nucleotide BLAST.
-  2. Tildar "Align two or more sequences" y pegar los dos FASTA exportados.
-  3. En Program selection elegir "blastn" (mas sensible que megablast, que
-     esta pensado para secuencias casi identicas).
-  4. Comparar contra los numeros de arriba: identidad, largo del alineamiento
-     y cantidad de gaps.
+How to compare:
+  1. Go to https://blast.ncbi.nlm.nih.gov -> Nucleotide BLAST.
+  2. Check "Align two or more sequences" and paste the two exported FASTA.
+  3. Under Program selection pick "blastn" (more sensitive than megablast,
+     which is meant for near-identical sequences).
+  4. Compare against the numbers above: identity, alignment length and gaps.
 
-Que esperar: BLAST es local (alinea solo los tramos que valen la pena) y
-nuestro camino es global (recorre las secuencias enteras de punta a punta), asi
-que BLAST suele reportar un alineamiento mas corto y con identidad mas alta.
-Si dentro del tramo que BLAST reporta nuestro camino sigue la misma diagonal,
-el algoritmo de busqueda de camino esta bien.
+What to expect: the path above comes from a purely local, one-step-at-a-time
+decision (see paths.py) with no accumulated score and no way to go back on a
+bad call. On real sequences the background noise (about 25% of cell pairs
+match by chance alone) is enough to pull it off the true diagonal over and
+over, so it can land far below both BLAST's result and the alignment
+dyn_align.py's dynamic programming finds on the same pair. If it lands close
+to BLAST's identity within the region BLAST reports, the path search did
+well; if it's far off, that's the naive, no-lookback design showing its
+limits, not a bug to chase.
 """)
     return stats

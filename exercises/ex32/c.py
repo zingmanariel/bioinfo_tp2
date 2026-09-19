@@ -31,8 +31,8 @@ def run():
     myoglobin = load_fasta(data_path(DISTANT_PROTEIN))
 
     pairs = {
-        'beta-globina vs. delta-globina (parecidas)': (beta, delta),
-        'beta-globina vs. mioglobina (lejanas)': (beta, myoglobin),
+        'beta-globin vs. delta-globin (close)': (beta, delta),
+        'beta-globin vs. myoglobin (distant)': (beta, myoglobin),
     }
 
     for label, (s1, s2) in pairs.items():
@@ -40,26 +40,30 @@ def run():
         _, row1, row2 = align(s1, s2, matrix)
         print_alignment(row1, row2)
 
-    print(f'\n--- efecto del umbral (w = {WINDOW}) ---')
-    print(f'{"par":<44} {"umbral":>7} {"dots":>7} {"identidad":>10} {"gaps":>6}')
+    print(f'\n--- effect of the threshold (w = {WINDOW}) ---')
+    print(f'{"pair":<40} {"threshold":>9} {"dots":>7} {"identity":>10} {"gaps":>6}')
     for label, (s1, s2) in pairs.items():
         for threshold in THRESHOLDS:
             dotplot, row1, row2 = align(s1, s2, matrix, threshold=threshold)
             stats = alignment_stats(row1, row2)
-            print(f'{label[:44]:<44} {threshold:>7} {density(dotplot):>7.1%} '
+            print(f'{label[:40]:<40} {threshold:>9} {density(dotplot):>7.1%} '
                   f'{stats["identity"]:>10.1%} {stats["gaps"]:>6}')
 
     print("""
-El par parecido aguanta cualquier umbral: la diagonal esta tan poblada que el
-camino la sigue igual y el alineamiento no cambia. El par lejano es el que se
-rompe, pero no como uno esperaria: con umbral alto el dot-plot queda casi
-vacio, el camino se queda sin casillas en que apoyarse y sale derecho por la
-diagonal sin engancharse con nada. Hace MENOS gaps, no mas, y la identidad se
-desploma. La senal la borro el filtro, no el algoritmo de busqueda.
+The close pair holds up under any threshold: the diagonal is so densely
+populated that the path follows it regardless, and the alignment doesn't
+change. The distant pair is where things fall apart, and badly: identity
+craters to 7.7-13.4%, barely above what a handful of lucky BLOSUM-positive
+substitutions would give by chance. This isn't (only) the filter's fault the
+way it was for the very noisy raw dot-plot: even at the threshold that keeps
+the most signal (5), a purely local, one-step-at-a-time decision still can't
+reliably follow a diagonal this weak, because a single bad call early on
+never gets corrected later.
 
-Contra BLAST (blastp, "Align two or more sequences"): para beta vs. delta la
-identidad deberia dar practicamente igual, porque el alineamiento es casi todo
-diagonal. Para beta vs. mioglobina BLAST reporta un alineamiento local mas
-corto y con mejor identidad que el nuestro, que es global; ahi la diferencia no
-es un error del camino sino del modelo (global vs. local).
+Against BLAST (blastp, "Align two or more sequences"): for beta vs. delta the
+identity should come out essentially the same, because the alignment is
+almost entirely diagonal. For beta vs. myoglobin, expect this path search to
+land well below whatever BLAST reports (global or local, significant or not)
+-that gap is the naive, no-lookback search design showing its limits, not a
+property of the sequences themselves.
 """)

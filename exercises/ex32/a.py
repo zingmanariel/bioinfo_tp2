@@ -15,21 +15,21 @@ from substitution import DEFAULT_MATRIX, available, describe, load_matrix
 
 
 def run():
-    print(f'matrices disponibles en Biopython:\n  {", ".join(available())}\n')
+    print(f'matrices available in Biopython:\n  {", ".join(available())}\n')
     matrix = load_matrix(DEFAULT_MATRIX)
     describe(matrix, DEFAULT_MATRIX)
 
     s1, s2 = load_protein_pair()
-    print(f'\nproteinas: {len(s1)} y {len(s2)} residuos')
+    print(f'\nproteins: {len(s1)} and {len(s2)} residues')
     comparison = build_comparison_matrix(s1, s2, matrix)
-    print(f'matriz de comparacion {comparison.shape[0]} x {comparison.shape[1]}: '
-          f'puntajes entre {comparison.min():.0f} y {comparison.max():.0f}, '
-          f'promedio {comparison.mean():.2f}')
+    print(f'comparison matrix {comparison.shape[0]} x {comparison.shape[1]}: '
+          f'scores between {comparison.min():.0f} and {comparison.max():.0f}, '
+          f'average {comparison.mean():.2f}')
     positive = float(np.count_nonzero(comparison > 0)) / comparison.size
-    print(f'{positive:.1%} de las casillas tiene puntaje positivo; ese es el '
-          f'"dot-plot ingenuo" (prender donde el puntaje es > 0) y sale tan '
-          f'congestionado como el de ADN sin filtrar.')
+    print(f'{positive:.1%} of the cells have a positive score; that is the '
+          f'"naive dot-plot" (turn on where the score is > 0) and it comes '
+          f'out just as congested as the unfiltered DNA one.')
 
     plot_comparison_matrix(comparison, s1, s2,
-                           title=f'Matriz de comparacion ({DEFAULT_MATRIX})')
+                           title=f'Comparison matrix ({DEFAULT_MATRIX})')
     return comparison

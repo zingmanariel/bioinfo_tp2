@@ -21,26 +21,30 @@ def run():
     row1, row2 = align_from_path(s1, s2, path)
     stats = alignment_stats(row1, row2)
 
-    print(f'--- primeros {BLOCKS_SHOWN} bloques de nuestro alineamiento ---')
+    print(f'--- first {BLOCKS_SHOWN} blocks of our alignment ---')
     blocks = format_alignment(row1, row2, width=WIDTH).split('\n\n')
     print('\n\n'.join(blocks[:BLOCKS_SHOWN]))
 
-    print(f'\nnuestro alineamiento: largo {stats["length"]}, '
-          f'identidad {stats["identity"]:.1%}, gaps {stats["gaps"]}')
+    print(f'\nour alignment: length {stats["length"]}, '
+          f'identity {stats["identity"]:.1%}, gaps {stats["gaps"]}')
 
     for filename, sequence in zip(EXPORTS, (s1, s2)):
         write_fasta(data_path(filename), sequence, filename.split('.')[0])
-    print(f'secuencias exportadas a data/{EXPORTS[0]} y data/{EXPORTS[1]}')
+    print(f'sequences exported to data/{EXPORTS[0]} and data/{EXPORTS[1]}')
 
     print("""
-Que mirar al comparar con BLAST (bl2seq, blastn):
-  - Extension: BLAST alinea por tramos (HSPs) locales; nuestro camino es
-    global, asi que cubre las secuencias enteras, incluidas las puntas donde no
-    hay homologia (UTRs). Esas puntas son las que bajan nuestra identidad.
-  - Identidad: dentro del tramo que BLAST reporta deberia coincidir con la
-    nuestra; si difiere mucho, el camino se esta yendo de la diagonal.
-  - Gaps: BLAST penaliza abrir un gap mas caro que extenderlo (affine gaps);
-    nuestro modelo cobra lo mismo por cada paso V/H (gap lineal), asi que
-    tendemos a repartir mas gaps cortos donde BLAST pone uno solo largo.
+What to look at when comparing with BLAST (bl2seq, blastn):
+  - Coverage: BLAST aligns local stretches (HSPs); our path search here is
+    global, so it covers the whole sequences, including the ends where there
+    is no homology (UTRs). That is what drags our identity down.
+  - Identity: on top of that, the path itself is a purely local, one-step
+    decision with no accumulated score (see paths.py) -it can wander off the
+    true diagonal well before reaching those ends. If it lands far below
+    BLAST's identity even within the region BLAST reports, that is the greedy
+    design's own limitation, not (only) the global-vs-local difference.
+  - Gaps: BLAST charges more for opening a gap than for extending it (affine
+    gaps); our path pays the same for every V/H step (linear gap), and on top
+    of that it has no global view to decide where a single long gap would pay
+    off better than several short ones.
 """)
     return stats

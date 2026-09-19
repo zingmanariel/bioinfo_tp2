@@ -32,15 +32,15 @@ EXERCISES = {
     "3.2a": ex32a.run,
     "3.2b": ex32b.run,
     "3.2c": ex32c.run,
-    "3.2d": ex32d.run,   # opcional
-    "3.2e": ex32e.run,   # opcional
-    "3.2f": ex32f.run,   # opcional
+    "3.2d": ex32d.run,
+    "3.2e": ex32e.run,
+    "3.2f": ex32f.run,
 }
 
 
 def usage():
-    print("uso: python3 main.py <ejercicio>")
-    print("ejercicios disponibles:")
+    print("usage: python3 main.py <exercise>")
+    print("available exercises:")
     for name in EXERCISES:
         print(f"  {name}")
 
@@ -51,7 +51,7 @@ def main():
         return
     name = sys.argv[1]
     if name not in EXERCISES:
-        print(f"'{name}' no es un ejercicio conocido.\n")
+        print(f"'{name}' is not a known exercise.\n")
         usage()
         return
     EXERCISES[name]()

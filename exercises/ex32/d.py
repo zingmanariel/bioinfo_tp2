@@ -30,21 +30,21 @@ def run():
     zeros = kept - int(np.count_nonzero(scored))
     survivors = comparison[binary > 0]
 
-    print(f'w = {WINDOW}, umbral = {THRESHOLD}')
-    print(f'  dot-plot de 1s y 0s: {kept} casillas prendidas ({density(binary):.2%})')
-    print(f'  dot-plot con valores: las mismas {kept} casillas, con puntajes '
-          f'entre {scored.min():.0f} y {scored.max():.0f} '
-          f'({zeros} de ellas valen exactamente 0 y quedan indistinguibles '
-          f'del fondo)')
-    print(f'  puntaje promedio de lo que sobrevive al filtro: '
-          f'{np.mean(survivors):.2f} (contra {comparison.mean():.2f} en la '
-          f'matriz completa)')
-    print('\nLa diferencia con 3.2b es que ahora una casilla que sobrevive al '
-          'filtro no vale lo mismo que cualquier otra: un triptofano contra un '
-          'triptofano (11 en BLOSUM62) pesa mas que una sustitucion apenas '
-          'conservativa (1). Eso es lo que aprovecha el camino de 3.2e.')
+    print(f'w = {WINDOW}, threshold = {THRESHOLD}')
+    print(f'  1s-and-0s dot-plot: {kept} cells on ({density(binary):.2%})')
+    print(f'  dot-plot with values: the same {kept} cells, with scores '
+          f'between {scored.min():.0f} and {scored.max():.0f} '
+          f'({zeros} of them are worth exactly 0 and end up indistinguishable '
+          f'from the background)')
+    print(f'  average score of what survives the filter: '
+          f'{np.mean(survivors):.2f} (against {comparison.mean():.2f} in the '
+          f'full matrix)')
+    print('\nThe difference from 3.2b is that now a cell that survives the '
+          'filter isn\'t worth the same as any other: a tryptophan against a '
+          'tryptophan (11 in BLOSUM62) weighs more than a barely conservative '
+          'substitution (1). That is what the path in 3.2e takes advantage of.')
 
     plot_comparison_matrix(scored, s1, s2,
-                           title=f'Dot-plot con valores reales '
-                                 f'(w = {WINDOW}, umbral = {THRESHOLD})')
+                           title=f'Dot-plot with real values '
+                                 f'(w = {WINDOW}, threshold = {THRESHOLD})')
     return scored

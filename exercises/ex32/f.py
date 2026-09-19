@@ -8,22 +8,21 @@ Punto opcional del TP.
 from alignment import align_from_path, alignment_stats
 from dotplot import (build_comparison_matrix, comparison_to_dotplot,
                      comparison_to_scored_dotplot, density)
-from paths import find_path, find_path_scored, path_score
+from paths import find_path, path_score
 from sequences import (DISTANT_PROTEIN, data_path, load_fasta,
                        load_protein_pair)
 from substitution import load_matrix
 
 WINDOW = 7
-THRESHOLDS = [0, 5, 8, 12, 20]   # 0 = sin filtrar, solo para tener la referencia
-GAP_PENALTY = -4.0
+THRESHOLDS = [0, 5, 8, 12, 20]   # 0 = unfiltered, kept only as a reference point
 
 
 def summarize(s1, s2, comparison, path):
-    """Resumen de un camino: identidad del alineamiento y puntaje BLOSUM.
+    """Summary of a path: alignment identity and BLOSUM score.
 
-    El puntaje se mide siempre sobre la matriz de comparacion completa, no
-    sobre el dot-plot filtrado: es la unica forma de comparar con la misma vara
-    dos caminos que se calcularon con matrices distintas.
+    The score is always measured over the full comparison matrix, not over
+    the filtered dot-plot: it's the only way to compare, with the same
+    yardstick, two paths computed over different matrices.
     """
     stats = alignment_stats(*align_from_path(s1, s2, path))
     stats['score'] = path_score(comparison, path)
@@ -31,14 +30,13 @@ def summarize(s1, s2, comparison, path):
 
 
 def compare(s1, s2, comparison, threshold):
-    """El mismo par alineado con el dot-plot de 1s y 0s y con el de valores."""
+    """The same pair aligned with the 1s-and-0s dot-plot and with the real-valued one."""
     binary = comparison_to_dotplot(comparison, WINDOW, threshold)
     scored = comparison_to_scored_dotplot(comparison, WINDOW, threshold)
     return {
         'dots': density(binary),
-        '1s y 0s': summarize(s1, s2, comparison, find_path(binary)),
-        'valores': summarize(s1, s2, comparison,
-                             find_path_scored(scored, gap_penalty=GAP_PENALTY)),
+        '1s and 0s': summarize(s1, s2, comparison, find_path(binary)),
+        'real values': summarize(s1, s2, comparison, find_path(scored)),
     }
 
 
@@ -48,23 +46,22 @@ def run():
     myoglobin = load_fasta(data_path(DISTANT_PROTEIN))
 
     pairs = {
-        'beta vs. delta (parecidas)': (beta, delta),
-        'beta vs. mioglobina (lejanas)': (beta, myoglobin),
+        'beta vs. delta (close)': (beta, delta),
+        'beta vs. myoglobin (distant)': (beta, myoglobin),
     }
 
-    print(f'w = {WINDOW}, gap = {GAP_PENALTY:.0f}   '
-          f'(umbral 0 = matriz de comparacion sin filtrar)')
+    print(f'w = {WINDOW}   (threshold 0 = unfiltered comparison matrix)')
 
     for label, (s1, s2) in pairs.items():
         comparison = build_comparison_matrix(s1, s2, matrix)
         print(f'\n--- {label} ---')
-        print(f'{"umbral":>6}{"dots":>8}   '
-              f'{"1s y 0s (3.2c)":>28}   {"valores reales (3.2e)":>28}')
-        print(f'{"":>6}{"":>8}   {"id":>8}{"gaps":>6}{"puntaje":>9}   '
-              f'{"":>5}{"id":>8}{"gaps":>6}{"puntaje":>9}')
+        print(f'{"thresh":>6}{"dots":>8}   '
+              f'{"1s and 0s (3.2c)":>28}   {"real values (3.2e)":>28}')
+        print(f'{"":>6}{"":>8}   {"id":>8}{"gaps":>6}{"score":>9}   '
+              f'{"":>5}{"id":>8}{"gaps":>6}{"score":>9}')
         for threshold in THRESHOLDS:
             result = compare(s1, s2, comparison, threshold)
-            binary, scored = result['1s y 0s'], result['valores']
+            binary, scored = result['1s and 0s'], result['real values']
             print(f'{threshold:>6}{result["dots"]:>8.2%}   '
                   f'{binary["identity"]:>8.1%}{binary["gaps"]:>6}'
                   f'{binary["score"]:>9.0f}   '
@@ -72,36 +69,43 @@ def run():
                   f'{scored["score"]:>9.0f}')
 
     print("""
-Lectura de la tabla:
+Reading the table:
 
-1. El par parecido no distingue nada: con o sin filtro, con 1s y 0s o con
-   valores, el alineamiento es el mismo (93% de identidad, sin gaps). Cuando la
-   diagonal esta bien poblada, cualquier version del algoritmo la encuentra.
+1. The close pair is not perfectly stable either. The binary path stays at
+   93.2%/0 gaps for every threshold, but the real-valued path drifts (78-90%
+   identity, 6-8 gaps depending on the threshold) and at thresholds 8+ it
+   actually scores higher in raw BLOSUM (736 vs. 727) while showing lower
+   identity: it's optimizing total substitution score, not match count, so it
+   will trade a couple of matches for a pair of gaps if that raises the
+   score.
 
-2. El par lejano si distingue, y en dos direcciones opuestas:
-   - Sin filtrar (umbral 0), el camino sobre valores reales gana: usa los
-     puntajes de BLOSUM62 para elegir entre diagonales parecidas y saca mejor
-     puntaje que el binario.
-   - Con umbral alto pierde, y bastante. La razon es que el filtro le saco
-     justo lo que necesita: una casilla apagada vale 0, o sea "ni bueno ni
-     malo", asi que el camino ya no tiene con que decidir. El binario es mas
-     robusto al filtro porque solo le pide a la casilla que haya sobrevivido.
+2. The distant pair does not show the real-valued path winning. Unfiltered
+   (threshold 0) it's clearly worse than the binary one: 51 gaps and a very
+   negative score (-45) against 23 gaps and +16 for the binary path. Handing
+   the greedy rule real magnitudes without any filtering just gives it more
+   ways to talk itself into a gap chasing a marginally-less-bad neighbor, and
+   it wanders more, not less. From threshold 8 up, both variants converge to
+   the same low floor (7.7% at 12 and 20): once the filter has stripped out
+   almost everything, there's barely any surviving structure left for either
+   version to disagree about.
 
-3. La conclusion practica es que el filtro y el tipo de dot-plot no son dos
-   decisiones independientes: si se va a usar el dot-plot con valores reales
-   conviene filtrar poco (umbral bajo), porque el valor de cada casilla es la
-   informacion con la que trabaja el algoritmo.
+3. So for this algorithm, filtering and using real values are not a package
+   deal that reinforces itself the way one might expect: on the close pair,
+   real values only add noise to an already-solved case; on the distant pair,
+   real values without filtering make things worse, and with heavy filtering
+   both variants end up in the same bad place anyway.
 
-Ojo con leer la columna de identidad como si fuera la nota del alineamiento: el
-camino sobre valores reales maximiza puntaje BLOSUM, no cantidad de matches.
-Puede preferir una sustitucion conservativa (I por V, K por R) antes que un
-match aislado rodeado de sustituciones caras, y eso es exactamente lo que hace
-un alineador de verdad.
+Careful reading the identity column as if it were the alignment's grade: the
+real-valued path is maximizing BLOSUM score, not number of matches. It can
+prefer a conservative substitution (I for V, K for R) over an isolated match
+surrounded by expensive substitutions, and that is exactly what a real
+scoring-based aligner does -it's just that a purely local, one-step decision
+rule doesn't use that extra information reliably.
 
-Contra BLAST: para el par parecido los tres alineamientos (3.2c, 3.2e y BLAST)
-coinciden practicamente residuo por residuo. Para el par lejano queda la
-diferencia de fondo: BLAST es local y recorta el tramo que vale la pena,
-nuestro camino es global y alinea todo, incluidos los extremos donde no hay
-homologia; ademas BLAST usa gaps affines (abrir cuesta mas que extender), asi
-que arma un gap largo donde nosotros ponemos varios cortos.
+Against BLAST: for the close pair, expect all of these alignments (3.2c, 3.2e
+and BLAST) to land close to each other, since the alignment is almost
+entirely diagonal either way. For the distant pair, expect this path search
+to land well below BLAST regardless of filter or threshold -that gap comes
+from the search itself being local and one-step-at-a-time, not from any
+detail of how the dot-plot was filtered.
 """)

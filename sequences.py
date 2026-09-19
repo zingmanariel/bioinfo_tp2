@@ -17,10 +17,10 @@ NUCLEOTIDES = ['A', 'C', 'G', 'T']
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(HERE, 'data')
 
-# Los pares con los que trabajan los ejercicios (ver ncbi.RECORDS):
-#   ADN       beta-globina humana vs. de raton (mismo gen, especies distintas)
-#   Proteina  beta-globina vs. delta-globina humanas (muy parecidas)
-#   Lejana    mioglobina humana, para comparar contra una proteina lejana
+# The pairs the exercises work with (see ncbi.RECORDS):
+#   DNA       human beta-globin vs. mouse beta-globin (same gene, different species)
+#   Protein   human beta-globin vs. human delta-globin (very similar)
+#   Distant   human myoglobin, to compare against a distant protein
 DNA_PAIR = ('seq1.fasta', 'seq2.fasta')
 PROTEIN_PAIR = ('prot1.fasta', 'prot2.fasta')
 DISTANT_PROTEIN = 'prot3.fasta'

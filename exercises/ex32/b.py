@@ -16,23 +16,23 @@ def run():
     matrix = load_matrix()
     comparison = build_comparison_matrix(s1, s2, matrix)
 
-    print(f'{"":<10}' + ''.join(f'umbral {t:<8}' for t in THRESHOLDS))
+    print(f'{"":<10}' + ''.join(f'threshold {t:<5}' for t in THRESHOLDS))
     dotplots = {}
     for window in WINDOWS:
         cells = []
         for threshold in THRESHOLDS:
             dotplot = comparison_to_dotplot(comparison, window, threshold)
             cells.append(f'{density(dotplot):.2%}')
-            dotplots[f'w = {window}, umbral = {threshold}'] = dotplot
+            dotplots[f'w = {window}, threshold = {threshold}'] = dotplot
         print(f'w = {window:<5} ' + ''.join(f'{cell:<15}' for cell in cells))
 
-    print('\nLa ventana suma los puntajes a lo largo de su diagonal, asi que el '
-          'umbral se lee como "cuanto puntaje acumulado exige una corrida de w '
-          'residuos". Ventana chica + umbral bajo deja pasar el ruido; ventana '
-          'grande + umbral alto se queda solo con los tramos mas conservados y '
-          'puede cortar la diagonal en pedazos.')
+    print('\nThe window sums the scores along its diagonal, so the threshold '
+          'reads as "how much accumulated score does a run of w residues '
+          'need". A small window + low threshold lets noise through; a large '
+          'window + high threshold keeps only the most conserved stretches '
+          'and can cut the diagonal into pieces.')
 
     shown = {label: dotplots[label] for label in dotplots
              if label.startswith(f'w = {WINDOWS[1]}')}
-    plot_dotplot_grid(shown, title=f'Dot-plot de proteinas (w = {WINDOWS[1]})')
+    plot_dotplot_grid(shown, title=f'Protein dot-plot (w = {WINDOWS[1]})')
     return dotplots

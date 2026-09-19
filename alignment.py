@@ -1,17 +1,17 @@
-"""Del camino sobre el dot-plot al alineamiento en pantalla (3.1 h).
+"""From the path over the dot-plot to the on-screen alignment (3.1 h).
 
-Formato pedido por el TP, 3 filas:
+Format requested by the TP, 3 rows:
 
-    ACGTTCAGTAG     f1: secuencia 1 y sus gaps
-    AC---CACTTG     f2: secuencia 2 y sus gaps
-    **    *** *     f3: indicador de match
+    ACGTTCAGTAG     row 1: sequence 1 and its gaps
+    AC---CACTTG     row 2: sequence 2 and its gaps
+    **    *** *     row 3: match indicator
 
-Los gaps salen de los pasos del camino. Con la convencion de este codigo (s1 en
-las filas, s2 en las columnas):
+The gaps come from the path's steps. With this code's convention (s1 in the
+rows, s2 in the columns):
 
-    D  avanza en las dos secuencias  -> se alinean s1[i] y s2[j]
-    V  avanza solo en s1 (la vertical) -> gap en s2
-    H  avanza solo en s2 (la horizontal) -> gap en s1
+    D  advances in both sequences      -> aligns s1[i] and s2[j]
+    V  advances only in s1 (vertical)   -> gap in s2
+    H  advances only in s2 (horizontal) -> gap in s1
 """
 
 from paths import path_steps
@@ -20,12 +20,12 @@ GAP = '-'
 
 
 def align_from_path(s1, s2, path):
-    """Devuelve (fila1, fila2): s1 y s2 con los gaps que impone el camino."""
+    """Returns (row1, row2): s1 and s2 with the gaps the path imposes."""
     if not path:
         return '', ''
 
     i, j = path[0]
-    # La primera casilla del camino ya es un par alineado.
+    # The path's first cell is already an aligned pair.
     row1, row2 = s1[i], s2[j]
 
     for step in path_steps(path):
@@ -46,7 +46,7 @@ def align_from_path(s1, s2, path):
 
 
 def match_row(row1, row2, symbol='*'):
-    """Tercera fila del alineamiento: `symbol` donde las dos filas coinciden."""
+    """Third row of the alignment: `symbol` where the two rows agree."""
     marks = ''
     for a, b in zip(row1, row2):
         marks += symbol if a == b and a != GAP else ' '
@@ -54,9 +54,9 @@ def match_row(row1, row2, symbol='*'):
 
 
 def format_alignment(row1, row2, match_first=False, width=60):
-    """Arma el bloque de 3 filas listo para imprimir, cortado en `width`.
+    """Builds the 3-row block ready to print, wrapped at `width`.
 
-    match_first=True intercambia f2 y f3, la otra variante que menciona el TP.
+    match_first=True swaps rows 2 and 3, the other variant the TP mentions.
     """
     marks = match_row(row1, row2)
     blocks = []
@@ -71,7 +71,7 @@ def format_alignment(row1, row2, match_first=False, width=60):
 
 
 def alignment_stats(row1, row2):
-    """Resumen del alineamiento: largo, matches, mismatches, gaps e identidad."""
+    """Alignment summary: length, matches, mismatches, gaps and identity."""
     matches = mismatches = gaps = 0
     for a, b in zip(row1, row2):
         if a == GAP or b == GAP:
@@ -91,12 +91,12 @@ def alignment_stats(row1, row2):
 
 
 def print_alignment(row1, row2, match_first=False, width=60):
-    """Imprime el alineamiento y su resumen, que es lo que consumen 3.1h y 3.2c."""
+    """Prints the alignment and its summary, which is what 3.1h and 3.2c consume."""
     print(format_alignment(row1, row2, match_first=match_first, width=width))
     stats = alignment_stats(row1, row2)
-    print(f"\nlargo del alineamiento: {stats['length']}"
+    print(f"\nalignment length: {stats['length']}"
           f"  |  matches: {stats['matches']}"
           f"  |  mismatches: {stats['mismatches']}"
           f"  |  gaps: {stats['gaps']}"
-          f"  |  identidad: {stats['identity']:.1%}")
+          f"  |  identity: {stats['identity']:.1%}")
     return stats

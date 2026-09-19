@@ -1,8 +1,8 @@
-"""Todo lo que habla con NCBI: baja las secuencias con las que trabajan los
-ejercicios y las cachea en data/, para no volver a pedirlas.
+"""Everything that talks to NCBI: downloads the sequences the exercises work
+with and caches them in data/, so they don't need to be requested again.
 
-Las secuencias ya vienen descargadas en el repo. Si borra data/, la primera
-corrida las vuelve a bajar.
+The sequences already ship downloaded in the repo. If you delete data/, the
+first run downloads them again.
 """
 
 import os
@@ -11,29 +11,29 @@ from Bio import Entrez, SeqIO
 
 from sequences import DATA_DIR, data_path
 
-# NCBI pide una direccion de contacto en cada request.
+# NCBI asks for a contact address on every request.
 Entrez.email = 'arielz@gmail.com'
 
-# Que secuencia va en cada archivo de data/.
+# Which sequence goes in each file under data/.
 #
-# ADN: el mismo gen (beta-globina) en humano y en raton. Son homologos, asi que
-# el dot-plot muestra una diagonal clara con regiones divergentes, que es
-# justo lo que hace falta para 3.1.
+# DNA: the same gene (beta-globin) in human and in mouse. They're homologs,
+# so the dot-plot shows a clear diagonal with divergent regions, which is
+# exactly what 3.1 needs.
 #
-# Proteinas: beta-globina humana contra delta-globina humana (muy parecidas) y
-# contra mioglobina (parecidas de lejos), para el analisis de 3.2c.
+# Protein: human beta-globin against human delta-globin (very similar) and
+# against myoglobin (distantly similar), for the analysis in 3.2c.
 RECORDS = {
-    'seq1.fasta': ('NM_000518.5', 'nucleotide', 'HBB humano (mRNA)'),
-    'seq2.fasta': ('NM_008220.3', 'nucleotide', 'Hbb-bs raton (mRNA)'),
-    'prot1.fasta': ('NP_000509.1', 'protein', 'beta-globina humana'),
-    'prot2.fasta': ('NP_000510.1', 'protein', 'delta-globina humana'),
-    'prot3.fasta': ('NP_005359.1', 'protein', 'mioglobina humana'),
+    'seq1.fasta': ('NM_000518.5', 'nucleotide', 'human HBB (mRNA)'),
+    'seq2.fasta': ('NM_008220.3', 'nucleotide', 'mouse Hbb-bs (mRNA)'),
+    'prot1.fasta': ('NP_000509.1', 'protein', 'human beta-globin'),
+    'prot2.fasta': ('NP_000510.1', 'protein', 'human delta-globin'),
+    'prot3.fasta': ('NP_005359.1', 'protein', 'human myoglobin'),
 }
 
 
 def fetch(accession, db, filename):
-    """Baja un record de NCBI y lo guarda como FASTA en data/filename."""
-    print(f'Descargando {accession} de NCBI...')
+    """Downloads one record from NCBI and saves it as FASTA in data/filename."""
+    print(f'Downloading {accession} from NCBI...')
     handle = Entrez.efetch(db=db, id=accession, rettype='fasta', retmode='text')
     record = next(SeqIO.parse(handle, 'fasta'))
     handle.close()
@@ -45,7 +45,7 @@ def fetch(accession, db, filename):
 
 
 def download_missing():
-    """Baja los archivos de data/ que no esten, y devuelve cuales bajo."""
+    """Downloads the files under data/ that are missing, and returns which ones."""
     downloaded = []
     for filename, (accession, db, description) in RECORDS.items():
         if os.path.exists(data_path(filename)):
@@ -57,4 +57,4 @@ def download_missing():
 
 if __name__ == '__main__':
     missing = download_missing()
-    print(f'Descargados: {missing}' if missing else 'data/ ya estaba completo.')
+    print(f'Downloaded: {missing}' if missing else 'data/ was already complete.')

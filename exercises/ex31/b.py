@@ -16,11 +16,11 @@ def run():
 
     small = build_dotplot(s1[:SMALL], s2[:SMALL])
     plot_dotplot(small, s1[:SMALL], s2[:SMALL],
-                 title=f'Dot-plot de las primeras {SMALL} bases')
+                 title=f'Dot-plot of the first {SMALL} bases')
 
     dotplot = build_dotplot(s1, s2)
-    plot_dotplot(dotplot, title=f'Dot-plot completo ({len(s1)} x {len(s2)} bases)')
+    plot_dotplot(dotplot, title=f'Full dot-plot ({len(s1)} x {len(s2)} bases)')
 
-    print(f'{density(dotplot):.1%} de las casillas prendidas: la diagonal '
-          f'existe pero queda tapada por el ruido de fondo.')
+    print(f'{density(dotplot):.1%} of the cells are on: the diagonal is '
+          f'there but it is buried under background noise.')
     return dotplot
