@@ -95,6 +95,37 @@ def plot_dotplot_grid(dotplots, title='Filter comparison', paths=None):
     plt.show()
 
 
+def plot_identity_sweep(true_identities, series, save_path=None,
+                        title='Measured identity vs. true identity'):
+    """Line plot comparing algorithms across a sweep of true identity values.
+
+    series: list of (label, values, color) tuples, one line each, `values`
+    aligned with `true_identities`. Draws a dashed y=x reference line: a
+    method that recovers the true identity exactly would sit right on it.
+    """
+    fig, ax = plt.subplots(figsize=(6.5, 5.5))
+
+    lo, hi = min(true_identities), max(true_identities)
+    ax.plot([lo, hi], [lo, hi], linestyle='--', color=GREY, linewidth=1,
+            label='y = x (true identity)', zorder=1)
+
+    for label, values, color in series:
+        ax.plot(true_identities, values, marker='o', color=color,
+                linewidth=1.8, label=label, zorder=2)
+
+    ax.set_xlabel('true identity')
+    ax.set_ylabel('measured identity')
+    ax.set_title(title, fontsize=11)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+    else:
+        plt.show()
+
+
 def plot_paths_comparison(matrix, paths, s1=None, s2=None,
                           title='Path comparison', diverging=False,
                           save_path=None):

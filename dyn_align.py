@@ -15,12 +15,15 @@ It's the mirror image of the one dotplot.py uses in the rest of the TP.
 
 import os
 
-from alignment import alignment_stats, print_alignment
+import random
+
+from alignment import align_from_path, alignment_stats, print_alignment
 from dotplot import build_dotplot, build_comparison_matrix, comparison_to_dotplot
 from paths import find_path
-from plots import GREEN, ORANGE, plot_dotplot, plot_paths_comparison
-from sequences import (DISTANT_PROTEIN, data_path, load_fasta, load_pair,
-                       load_protein_pair)
+from plots import (GREEN, ORANGE, plot_dotplot, plot_identity_sweep,
+                   plot_paths_comparison)
+from sequences import (DISTANT_PROTEIN, data_path, generate_random_nt_sequence,
+                       load_fasta, load_pair, load_protein_pair, mutate)
 from substitution import load_matrix
 
 
@@ -256,10 +259,57 @@ def save_figures(out_dir=FIGURES_DIR):
     print(f'\nfigures saved to {out_dir}/')
 
 
+# ---------------------------------------------------------------------------
+# Bonus: does the pattern hold over more than one pair? A sweep of synthetic
+# DNA pairs at controlled identity, greedy vs. DP. BLAST is left out: that leg
+# doesn't scale to many pairs without automating a web query per pair.
+# ---------------------------------------------------------------------------
+
+SWEEP_IDENTITIES = [0.95, 0.90, 0.80, 0.70, 0.60, 0.50]
+SWEEP_SEEDS = 5
+SWEEP_LENGTH = 300
+
+
+def run_identity_sweep(out_dir=FIGURES_DIR):
+    """Synthetic DNA pairs at controlled identity (sequences.mutate()):
+    measures how well the greedy path and the DP recover the true identity as
+    it drops, averaged over a few random seeds per identity level."""
+    random.seed(0)
+
+    print(f'\n--- identity sweep (length {SWEEP_LENGTH}, {SWEEP_SEEDS} seeds) ---')
+    print(f'{"true identity":>14} {"greedy":>10} {"DP":>10}')
+
+    greedy_means, dp_means = [], []
+    for identity in SWEEP_IDENTITIES:
+        greedy_values, dp_values = [], []
+        for _ in range(SWEEP_SEEDS):
+            s1 = generate_random_nt_sequence(SWEEP_LENGTH)
+            s2 = mutate(s1, identity)
+
+            greedy_path = find_path(build_dotplot(s1, s2))
+            greedy_row1, greedy_row2 = align_from_path(s1, s2, greedy_path)
+            greedy_values.append(alignment_stats(greedy_row1, greedy_row2)['identity'])
+
+            dp_row1, dp_row2, _ = calc_alignment(s1, s2, DotPlot(s1, s2), gap=DNA_GAP)
+            dp_values.append(alignment_stats(dp_row1, dp_row2)['identity'])
+
+        greedy_mean = sum(greedy_values) / len(greedy_values)
+        dp_mean = sum(dp_values) / len(dp_values)
+        greedy_means.append(greedy_mean)
+        dp_means.append(dp_mean)
+        print(f'{identity:>14.0%} {greedy_mean:>10.1%} {dp_mean:>10.1%}')
+
+    plot_identity_sweep(
+        SWEEP_IDENTITIES,
+        [('greedy', greedy_means, ORANGE), ('DP', dp_means, GREEN)],
+        save_path=os.path.join(out_dir, 'identity_sweep.png'))
+
+
 def main():
     run_dna()
     run_proteins()
     save_figures()
+    run_identity_sweep()
 
 
 if __name__ == "__main__":

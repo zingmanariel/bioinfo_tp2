@@ -139,3 +139,25 @@ Un E-value de 13 significa que se esperarían en promedio 13 aciertos así de bu
 Las corridas de esta comparación (ADN, los dos pares de proteína, el barrido de gap) están consolidadas en `dyn_align.main()`, así que `python3 dyn_align.py` reproduce cada número citado acá.
 
 El resto del repositorio (`exercises/`, `dotplot.py`, `paths.py`, `plots.py`, `substitution.py`, `sequences.py`) es la resolución de 3.1 y 3.2 tal como los pide el TP, y se armó con Claude como la base de comparación contra la que medimos la DP.
+
+---
+
+## p.d. (bonus?):
+
+Todo lo anterior compara un par cercano y uno lejano, un ejemplo de cada extremo. Para ver si el patrón se sostiene se nos ocurrio armar un barrido de pares sintéticos de ADN con identidades controladas (`sequences.mutate()`, largo 300), de 95% a 50%, usando 5 randomizaciones por punto (`dyn_align.run_identity_sweep()`).
+Este chequeo decidimos hacerlo sin BLAST: intentamos automatizarlo con `NCBIWWW.qblast()` para no tener que pegarle a mano a cada par, pero empezamos a chocar con el límite de requests de NCBI, y como ya estabamos tarde para la entrega preferimos dejarlo así, solo greedy contra DP.
+Sería interesante confirmar que BLAST y DP se mantienen mas menos alineados.
+
+![Identidad medida vs. identidad real, barrido de pares sintéticos](figures/identity_sweep.png)
+
+```
+true identity   greedy    DP
+          95%    74,3%   95,8%
+          90%    42,1%   88,3%
+          80%    49,9%   81,3%
+          70%    33,6%   70,1%
+          60%    27,2%   59,8%
+          50%    27,3%   51,8%
+```
+
+La DP sigue la línea y=x de punta a punta: mide la identidad real del par en los seis niveles, con un error de un par de puntos como mucho. El greedy no solo queda por debajo en todo el rango, además baja de forma poco prolija: a 90% de identidad real mide menos (42,1%) que a 80% (49,9%). Eso muestra que no es solo peor en promedio, es inestable, sensible a en qué posiciones exactas cayeron las mutaciones de cada randomizacion. El único punto donde remonta un poco es 95%, donde casi no hay ruido de fondo para que la decisión local se equivoque.
